@@ -63,6 +63,35 @@ def chat():
             tk.END,
             "Friday: Welcome back, " + memory["name"] +"!\n"
         )
+    elif message in ["what is my name", "what's my name", "who am i" , "tell me my name"]:
+        result_label.config(text="Your name is " + memory["name"])
+        chat_history.insert(
+            tk.END,
+            "Friday: You are " + memory["name"] + "\n"
+        )
+
+    elif message in ["how old am i", "what is my age", "how old are you", "tell me my age"]:
+        result_label.config(text="You are " + str(memory["age"]) + " years old")
+        chat_history.insert(
+            tk.END,
+            "Friday: You are " +str(memory["age"]) + " years old.\n"
+        )
+
+    elif message in ["where do i live", "what is my city", "tell me the city i live in"]:
+        result_label.config(text="You live in " + memory["city"])
+        chat_history.insert(
+            tk.END,
+            "Friday: You live in " + memory["city"] +".\n"
+        )
+
+    elif message in ["what is my hobby", "what do i like" , "what do i enjoy", "tell me my hobby"]:
+        result_label.config(text="Your hobby is " + memory["hobby"])
+        chat_history.insert(
+            tk.END,
+            "Friday: Your hobby is " + memory["hobby"] + ".\n"
+        )
+
+
     elif message == "how are you":
         result_label.config(text="I'm doing great! ")
         chat_history.insert(
