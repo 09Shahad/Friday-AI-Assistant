@@ -9,6 +9,14 @@ import datetime
 import webbrowser
 import tkinter as tk
 import json
+import pyttsx3
+
+engine = pyttsx3.init()
+
+#Speak Functions
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
 
 #Memory Functions
 memory={}
@@ -34,10 +42,12 @@ def chat():
     if message == "hi":
         result_label.config(text="Hello!")
         chat_history.insert(tk.END, "Friday: Hello!\n")
+        speak("Hello!")
 
     elif message == "hey":
         result_label.config(text="Hey!")
         chat_history.insert(tk.END, "Friday: Hey!\n")
+        speak("Hey!")
 
     elif message == "hello":
         result_label.config(text="Welcome back, " + memory["name"] + "!")
@@ -45,19 +55,23 @@ def chat():
             tk.END,
             "Friday: Welcome back, " + memory["name"] +"!\n"
         )
+        speak("Welcome back, ", + memory["name"])
+
     elif message in ["what is my name", "what's my name", "who am i" , "tell me my name"]:
         result_label.config(text="Your name is " + memory["name"])
         chat_history.insert(
             tk.END,
             "Friday: You are " + memory["name"] + "\n"
         )
+        speak("You are " + memory["name"])
 
     elif message in ["how old am i", "what is my age", "how old are you", "tell me my age"]:
-        result_label.config(text="You are " + str(memory["age"]) + " years old")
+        result_label.config(text="You are " + str(memory["age"]) + " years old.")
         chat_history.insert(
             tk.END,
             "Friday: You are " +str(memory["age"]) + " years old.\n"
         )
+        speak("You are " + str(memory["age"]) + " years old.")
 
     elif message in ["where do i live", "what is my city", "tell me the city i live in"]:
         result_label.config(text="You live in " + memory["city"])
@@ -65,6 +79,7 @@ def chat():
             tk.END,
             "Friday: You live in " + memory["city"] +".\n"
         )
+        speak("You live in " + memory["city"])
 
     elif message in ["what is my hobby", "what do i like" , "what do i enjoy", "tell me my hobby"]:
         result_label.config(text="Your hobby is " + memory["hobby"])
@@ -72,6 +87,7 @@ def chat():
             tk.END,
             "Friday: Your hobby is " + memory["hobby"] + ".\n"
         )
+        speak("Your hobby is " + memory["hobby"])
 
 
     elif message == "how are you":
@@ -80,17 +96,22 @@ def chat():
             tk.END,
             "Friday: I'm doing great!\n"
         )
+        speak("I'm doing great!")
+
     elif message == "what's your name?":
         result_label.config(text="My name is Friday!")
         chat_history.insert(tk.END, "Friday:My name is Friday!\n")
+        speak("My name is Friday!")
     
     elif  message == "who are you":
         result_label.config(text="I'm Friday, an AI assistant!")
         chat_history.insert(tk.END, "Friday:I'm Friday, an AI assistant!\n")
+        speak("I'm Friday, an AI assistant!")
     
     elif message == "how old are you":
         result_label.config(text="I'm still growing and learning!")
         chat_history.insert(tk.END, "Friday:I'm still growing and learning!\n")
+        speak("I'm still growing and Learning!")
 
     elif message == "bye":
         result_label.config(text="Goodbye!")
@@ -98,12 +119,14 @@ def chat():
             tk.END,
             "Friday: Goodbye!\n"
         )
+        speak("Goodbye!")
     else:
         result_label.config(text="I don't understand.")
         chat_history.insert(
             tk.END,
             "Friday: I don't understand.\n"
         )
+        speak("I don't understand.")
     chat_entry.delete(0, tk.END)
 
 
