@@ -8,42 +8,24 @@ import random
 import datetime
 import webbrowser
 import tkinter as tk
+import json
 
-#Memory
+#Memory Functions
 memory={}
+def load_memory():
+    try:
+        with open("memory.json", "r") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return{}
+    
+memory = load_memory()
+
 
 secret_number = random.randint(1,10)
 
-#Functions
-def talk(name, hobby, age):
-    mood = input("How are you today? ")
-    if mood == "fine":
-        print("That's good to hear! ")
-    elif mood == "sad":
-        print("You told me your age is", age, " how about talking about your interests?" )
-        print("I'm sorry to hear that. ")
-    else:
-        print("I remember your hobby is ", hobby)
-        print("Thank you for telling me. ")
 
-
-def calculator():
-    num1 = int(number1.get())
-    num2 = int(number2.get())
-    answer = num1 + num2
-    result_label.config(text="Answer: " + str(answer))
-
-
-def joke():
-    jokes=[
-        "Why did the computer go to the doctor? Becuase it caught a viruse!",
-        "Why do pragrammers loves python? Becuase it's easy to read!",
-        "Why was the computer cold? It forget to close windows!",
-        "Debugging: Being the detective in a crime movie where you're also the criminal."
-    ]
-    result_label.config(text=random.choice(jokes))
-
-
+#Chat Functions
 def chat():
     message = str(chat_entry.get()).strip().lower()
     print("Message =", repr(message))
@@ -125,6 +107,38 @@ def chat():
     chat_entry.delete(0, tk.END)
 
 
+def talk(name, hobby, age):
+    mood = input("How are you today? ")
+    if mood == "fine":
+        print("That's good to hear! ")
+    elif mood == "sad":
+        print("You told me your age is", age, " how about talking about your interests?" )
+        print("I'm sorry to hear that. ")
+    else:
+        print("I remember your hobby is ", hobby)
+        print("Thank you for telling me. ")
+
+
+#Calculator
+def calculator():
+    num1 = int(number1.get())
+    num2 = int(number2.get())
+    answer = num1 + num2
+    result_label.config(text="Answer: " + str(answer))
+
+
+#Jokes
+def joke():
+    jokes=[
+        "Why did the computer go to the doctor? Becuase it caught a viruse!",
+        "Why do pragrammers loves python? Becuase it's easy to read!",
+        "Why was the computer cold? It forget to close windows!",
+        "Debugging: Being the detective in a crime movie where you're also the criminal."
+    ]
+    result_label.config(text=random.choice(jokes))
+
+
+#Time & Date
 def show_time():
     now = datetime.datetime.now()
     time = now.strftime("%H:%M:%S")
@@ -136,6 +150,8 @@ def show_date():
     date = now.strftime("%d/%m/%Y")
     result_label.config(text="Current Date: " + date)
 
+
+#Websites
 def open_google():
     webbrowser.open("https://www.google.com")
 
@@ -152,6 +168,7 @@ def get_user_info():
     hobby = input("What is your hobby? ")
     return name, age, city, hobby
 
+#Games
 def game():
     global secret_number
 
@@ -202,7 +219,7 @@ def greeting(name):
     print("Welcome back ", memory["name"])
 
 
-#Window
+#GUI
 window = tk.Tk()
 window.title("Friday v1.0")
 window.geometry("600x950")
@@ -336,6 +353,9 @@ memory["name"] = name
 memory["age"] = age
 memory["city"] = city
 memory["hobby"] = hobby
+
+with open("memory.json", "w") as file:
+    json.dump(memory, file, indent=4)
 
 show_user_info(name, age, city, hobby)
 
