@@ -10,13 +10,35 @@ import webbrowser
 import tkinter as tk
 import json
 import pyttsx3
+import threading
 
-engine = pyttsx3.init()
 
 #Speak Functions
 def speak(text):
-    engine.say(text)
-    engine.runAndWait()
+    def run():
+        try:
+            engine = pyttsx3.init()
+            engine.setProperty('rate', 165)
+
+            voices = engine.getProperty('voices')
+            female_voice = None
+
+            for voice in voices:
+                if "zira" in voice.name.lower() or "female" in voice.name.lower():
+                    female_voice = voice.id
+                    break
+
+                if female_voice:
+                    engine.setProperty('voice', female_voice)
+                elif len(voices) > 1:
+                    engine.setProperty('voice', voices[1].id)
+
+                engine.say(text)
+                engine.runAndWait()
+        except Exception as e:
+            print("Audio Error:", e)
+    threading.Thread(target=run, daemon=True).start()
+
 
 #Memory Functions
 memory={}
@@ -28,7 +50,6 @@ def load_memory():
         return{}
     
 memory = load_memory()
-
 
 secret_number = random.randint(1,10)
 
