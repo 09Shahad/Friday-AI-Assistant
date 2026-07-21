@@ -11,6 +11,8 @@ import tkinter as tk
 import json
 import pyttsx3
 import threading
+import os
+
 
 
 #Speak Functions
@@ -43,13 +45,29 @@ def speak(text):
 #Memory Functions
 memory={}
 def load_memory():
-    try:
-        with open("memory.json", "r") as file:
-            return json.load(file)
-    except FileNotFoundError:
-        return{}
+    if not os.path.exists("memory.json"):
+        print("--- Setup You Memory ---")
+        name = input("Enter your name: ")
+        age = input("Enter your age: ")
+        city = input("Enter your city: ")
+        hobby = input("Enter your hobby: ")
+
+        user_data = {
+            "name": name,
+            "age": age,
+            "city": city,
+            "hobby": hobby
+        }
+
+        with open("memory.json", "w") as file:
+            json.dump(user_data, file, indent=4)
+        return user_data
+    
+    with open("memory.json", "r") as file:
+        return json.load(file)
     
 memory = load_memory()
+
 
 secret_number = random.randint(1,10)
 
@@ -58,96 +76,57 @@ secret_number = random.randint(1,10)
 def chat():
     message = str(chat_entry.get()).strip().lower()
     print("Message =", repr(message))
+
+    if not message:
+        return
+    
     chat_history.insert(tk.END, "You: " + message + "\n")
 
+    user_name = memory.get("name", "friend")
+    user_age = str(memory.get("age", "N/A"))
+    user_city = memory.get("city", "your city")
+    user_hobby = memory.get("hobby", "your hobbies")
+
     if message == "hi":
-        result_label.config(text="Hello!")
-        chat_history.insert(tk.END, "Friday: Hello!\n")
-        speak("Hello!")
-
+        response = "Hello!"
     elif message == "hey":
-        result_label.config(text="Hey!")
-        chat_history.insert(tk.END, "Friday: Hey!\n")
-        speak("Hey!")
-
+        response = "Hey!"
     elif message == "hello":
-        result_label.config(text="Welcome back, " + memory["name"] + "!")
-        chat_history.insert(
-            tk.END,
-            "Friday: Welcome back, " + memory["name"] +"!\n"
-        )
-        speak("Welcome back, ", + memory["name"])
+        response = f"Welcome back, {user_name}!"
 
-    elif message in ["what is my name", "what's my name", "who am i" , "tell me my name"]:
-        result_label.config(text="Your name is " + memory["name"])
-        chat_history.insert(
-            tk.END,
-            "Friday: You are " + memory["name"] + "\n"
-        )
-        speak("You are " + memory["name"])
+    elif message in ["what is my name", "what's my name", " who am i", "tell me my name"]:
+        response = f"Your name is {user_name}!"
 
     elif message in ["how old am i", "what is my age", "how old are you", "tell me my age"]:
-        result_label.config(text="You are " + str(memory["age"]) + " years old.")
-        chat_history.insert(
-            tk.END,
-            "Friday: You are " +str(memory["age"]) + " years old.\n"
-        )
-        speak("You are " + str(memory["age"]) + " years old.")
+        response = f"Your are {user_age}."
 
     elif message in ["where do i live", "what is my city", "tell me the city i live in"]:
-        result_label.config(text="You live in " + memory["city"])
-        chat_history.insert(
-            tk.END,
-            "Friday: You live in " + memory["city"] +".\n"
-        )
-        speak("You live in " + memory["city"])
+        response = f"You live in {user_city}."
 
     elif message in ["what is my hobby", "what do i like" , "what do i enjoy", "tell me my hobby"]:
-        result_label.config(text="Your hobby is " + memory["hobby"])
-        chat_history.insert(
-            tk.END,
-            "Friday: Your hobby is " + memory["hobby"] + ".\n"
-        )
-        speak("Your hobby is " + memory["hobby"])
+        response = f"Your hobby is {user_hobby}."
 
 
     elif message == "how are you":
-        result_label.config(text="I'm doing great! ")
-        chat_history.insert(
-            tk.END,
-            "Friday: I'm doing great!\n"
-        )
-        speak("I'm doing great!")
+        response = "I'm doing great!"
 
     elif message == "what's your name?":
-        result_label.config(text="My name is Friday!")
-        chat_history.insert(tk.END, "Friday:My name is Friday!\n")
-        speak("My name is Friday!")
+        response = "My name is Friday!"
     
     elif  message == "who are you":
-        result_label.config(text="I'm Friday, an AI assistant!")
-        chat_history.insert(tk.END, "Friday:I'm Friday, an AI assistant!\n")
-        speak("I'm Friday, an AI assistant!")
-    
+        response = "I'm Friday, an AI assistant."
+
     elif message == "how old are you":
-        result_label.config(text="I'm still growing and learning!")
-        chat_history.insert(tk.END, "Friday:I'm still growing and learning!\n")
-        speak("I'm still growing and Learning!")
+        response = "I'm still growing and learning!"
 
     elif message == "bye":
-        result_label.config(text="Goodbye!")
-        chat_history.insert(
-            tk.END,
-            "Friday: Goodbye!\n"
-        )
-        speak("Goodbye!")
+        response = "Goodbye!"
     else:
-        result_label.config(text="I don't understand.")
-        chat_history.insert(
-            tk.END,
-            "Friday: I don't understand.\n"
-        )
-        speak("I don't understand.")
+        response = "I don't understand."
+
+    result_label.config(text=response)
+    chat_history.insert(tk.END, f"Friday: {response}\n")
+    speak(response)
     chat_entry.delete(0, tk.END)
 
 
@@ -392,14 +371,11 @@ chat_label.pack(pady=3)
 
 
 #Main Treminal Flow & Loop
-name, age, city, hobby = get_user_info()
-memory["name"] = name
-memory["age"] = age
-memory["city"] = city
-memory["hobby"] = hobby
+name = memory.get("name" , "User")
+age = memory.get("age", "N/A")
+city = memory.get("city", "N/A")
+hobby = memory.get("hobby", "N/A")
 
-with open("memory.json", "w") as file:
-    json.dump(memory, file, indent=4)
 
 show_user_info(name, age, city, hobby)
 
