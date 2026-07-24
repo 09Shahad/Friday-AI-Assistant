@@ -243,131 +243,134 @@ def greeting(name):
 
 
 #GUI
+BG_COLOR = "#1E1E2E"
+FRAME_BG = "#2B2B3B"
+TEXT_FG = "#FFFFFF"
+BTN_BG = "#3B4252"
+BTN_FG = "#ECEFF4"
+ACCENT_COLOR = "#88C0D0"
+
+#Adjust the main window
 window = tk.Tk()
-window.title("Friday v1.0")
-window.geometry("600x950")
+window.title("Friday AI assistant")
+window.geometry("520x750")
+window.configure(bg=BG_COLOR)
 
-
-#Widgets
 #Labels
 Label = tk.Label(
     window,
     text="Friday AI Assistant",
-    font=("Arial", 16),
+    font=("Segoe UI", 16, "bold"),
+    bg=BG_COLOR,
+    fg=ACCENT_COLOR
 )
-Label.pack(pady=10)
+Label.pack(pady=(15,5))
 
 subtitle = tk.Label(
     window,
-    text="Choose what you want me to do. ",
-    font=("Arial", 12)
+    text="Choose what you want me to do:",
+    font=("Segoe UI", 10),
+    bg=BG_COLOR,
+    fg="#D8DEE9"
 )
-subtitle.pack(pady=5)
+subtitle.pack(pady=(0,10))
 
+#Button Frame
+button_frame = tk.Frame(window, bg=FRAME_BG, bd=1, relief="solid", padx=10, pady=10)
+button_frame.pack(pady=5, padx=20)
 
-#Buttons
-google_button = tk.Button(
-    window,
-    text="Open Google",
-    command=open_google,
-)
-google_button.pack(pady=5)
+#Hover Effect
+def on_enter(e):
+    e.widget['background'] = "#4C566A"
 
-youtube_button = tk.Button(
-    window,
-    text="Open Youtube",
-    command=open_youtube
-)
-youtube_button.pack(pady=5)
+def on_leave(e):
+    e.widget['background'] = BTN_BG
 
-chatgpt_button= tk.Button(
-    window,
-    text="Open ChatGPT",
-    command=open_chatgpt
-)
-chatgpt_button.pack(pady=5)
+#Buttons Data
+buttons_data = [
+    ("Open Google", open_google, 0, 0),
+    ("Open Youtube", open_youtube, 0, 1),
+    ("Open ChatGPT", open_chatgpt, 1, 0),
+    ("Calculator", calculator, 1, 1),
+    ("Tell me a Joke", joke, 2, 0),
+    ("Chat", chat, 2, 1),
+    ("Guess Number", game, 3, 0),
+    ("Current Time", show_time, 3, 1),
+    ("Today's Date", show_date, 4, 0)
+]
 
-calculator_button = tk.Button(
-    window,
-    text="Calculator",
-    command=calculator,
-)
-calculator_button.pack(pady=3)
+for text, cmd, r, c in buttons_data:
+    btn = tk.Button(
+        button_frame,
+        text=text,
+        command=cmd,
+        font=("Segoe UI", 9, "bold"),
+        bg=BTN_BG,
+        fg=BTN_FG,
+        activebackground="#5E81AC",
+        activeforeground="#FFFFFF",
+        relief="flat",
+        width=18,
+        pady=5
+    )
+    btn.grid(row=r, column=c, padx=5, pady=4)
+    btn.bind("<Enter>", on_enter)
+    btn.bind("<Leave>", on_leave)
 
-joke_button = tk.Button(
-    window,
-    text="Tell me a joke",
-    command=joke,
-)
-joke_button.pack(pady=3)
+#Enters & Result
+entries_frame = tk.Frame(window, bg=BG_COLOR)
+entries_frame.pack(pady=5)
 
-chat_button = tk.Button(
-    window,
-    text="Chat",
-    command=chat,
-)
-chat_button.pack(pady=3)
+number1 = tk.Entry(entries_frame, width=12, font=("Segoe UI", 10), justify="center", bg="#2E3440", fg="#FFFFFF", insertbackground="white") 
+number1.grid(row=0, column=0, padx=5)
 
-game_button  = tk.Button(
-    window,
-    text="Guess Number",
-    command=game
-)
-game_button.pack(pady=3)
+number2 = tk.Entry(entries_frame, width=12 , font=("Segoe UI", 10), justify="center", bg="#2E3440", fg="#FFFFFF", insertbackground="white") 
+number2.grid(row=0, column=1, padx=5)
 
-time_button = tk.Button(
-    window,
-    text="Current Time",
-    command=show_time,
-)
-time_button.pack(pady=3)
-
-date_button = tk.Button(
-    window,
-    text="Today's Date",
-    command=show_date
-)
-date_button.pack(pady=3)
-
-
-#Entries
-number1  = tk.Entry(window)
-number1.pack(pady=3)
-
-number2 = tk.Entry(window)
-number2.pack(pady=3)
-
-
-#Labels for Results
 result_label = tk.Label(
     window,
     text="Answer will appear here.",
-    font=("Arial", 12)
+    font=("Segoe UI", 11, "italic"),
+    bg=BG_COLOR,
+    fg="#E5E9F0"
 )
-result_label.pack(pady=5)
+result_label.pack(pady=8)
 
-
-
-#Text & Chat Area
+#Chat History & Input
 chat_history = tk.Text(
     window,
-    height=10,
-    width=40
+    height=8,
+    width=52,
+    font=("Consolas", 10),
+    bg="#2E3440",
+    fg="#ECEFF4",
+    relief="flat",
+    padx=8,
+    pady=8
 )
 chat_history.pack(pady=5)
 
 chat_entry = tk.Entry(
     window,
-    width=30
+    width=40,
+    font=("Segoe UI", 10),
+    bg="#2E3440",
+    fg="#FFFFFF",
+    insertbackground="white",
+    relief="flat"
 )
-chat_entry.pack(pady=3)
+chat_entry.pack(pady=5)
 
 chat_label = tk.Label(
     window,
-    text="Friday is waiting...",
-    font=("Arial", 12)
+    text="Friday is waiting",
+    font=("Segoe UI", 10, "bold"),
+    bg=BG_COLOR,
+    fg=ACCENT_COLOR
 )
-chat_label.pack(pady=3)
+chat_label.pack(pady=(2, 10))
+
+
 
 
 #Main Treminal Flow & Loop
