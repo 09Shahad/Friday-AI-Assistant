@@ -129,7 +129,27 @@ def ask_ai(prompt):
         return f"Error: {e}"
 
 
+def check_web_commands(text):
+    text = text.lower()
+
+    if "youtube music" in text or "yt music" in text or "يويتوب ميوزك" in text:
+        open_yt_music()
+        return "Opening YouTube Music"
+    elif "youtube" in text or "يوتيوب" in text:
+        open_youtube()
+        return "Opening YouTube"
+    elif "google" in text or "جوجل" in text:
+        open_google()
+        return "Opening Google"
+    elif "chatgpt" in text or "chat gpt" in text or "شات جي بي تي" in text:
+        open_chatgpt()
+        return "Opening ChatGPT"
+
+    return None
+
+
 def listen():
+    global chat_display
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
         chat_label.config(text="Friday is listening...")
@@ -141,6 +161,16 @@ def listen():
             chat_entry.delete(0, tk.END)
             chat_entry.insert(0, text)
             chat_label.config(text="Friday is waiting")
+
+            web_response = check_web_commands(text)
+
+            if web_response:
+                chat_display.insert(tk.END, f"You: {text}\nFriday: {web_response}\n\n")
+                chat_display.see(tk.END)
+                speak(web_response)
+            else:
+                chat()
+
         except Exception:
             chat_label.config(text="Could not understand...")
             window.after(2000, lambda: chat_label.config(text="Friday is waiting"))
@@ -158,14 +188,20 @@ def chat():
         return
     
     chat_history.insert(tk.END, "You: " + message + "\n")
+    chat_entry.delete(0, tk.END)
 
-    response = ask_ai(message)
+    action_result = check_web_commands(message)\
 
-    speak(response)
+    if action_result:
+        response = action_result
+
+    else:
+        response = ask_ai(message)
+
 
     chat_history.insert(tk.END, f"Friday: {response}\n\n")
     chat_history.see(tk.END)
-    chat_entry.delete(0, tk.END)
+    speak(response)
 
 
 
@@ -222,6 +258,13 @@ def open_youtube():
 
 def open_chatgpt():
     webbrowser.open("https://chat.openai.com")
+
+def open_yt_music():
+    webbrowser.open("https://music.youtube.com")
+
+    
+
+
     
 def get_user_info():
     name = input("What is your name? ")
@@ -335,7 +378,8 @@ buttons_data = [
     ("Chat", chat, 2, 1),
     ("Guess Number", game, 3, 0),
     ("Current Time", show_time, 3, 1),
-    ("Today's Date", show_date, 4, 0)
+    ("Today's Date", show_date, 4, 0),
+    ("YouTube Music", open_yt_music, 4, 1)
 ]
 
 for text, cmd, r, c in buttons_data:
