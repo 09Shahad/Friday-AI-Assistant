@@ -16,6 +16,8 @@ from dotenv import load_dotenv, find_dotenv
 from groq import Groq
 from tkinter import scrolledtext
 import speech_recognition as sr
+import subprocess
+import pyautogui
 
 
 load_dotenv(find_dotenv(), override=True)
@@ -132,7 +134,67 @@ def ask_ai(prompt):
 def check_web_commands(text):
     text = text.lower()
 
-    if "youtube music" in text or "yt music" in text or "يويتوب ميوزك" in text:
+#Controlling volume level
+    if "volume up" in text or "ارفعي الصوت" in text or " turn up" in text or "raise the volume" in text:
+        import re
+        numbers = re.findall(r'\d+', text)
+        amount = int(numbers[0]) if numbers else 5
+
+        for _ in range(amount):
+            pyautogui.press("volumeup")
+        return f"Raising volume by {amount}"
+
+    elif "volume down" in text or "نقصي الصوت" in text:
+        import re
+        numbers = re.findall(r'\d+', text)
+        amount = int(numbers[0]) if numbers else 5
+
+        for _ in range(amount):
+            pyautogui.press("volumedown")
+        return f"Lowering volume by {amount}"
+
+    elif "mute" in text or "كتم الصوت" in text:
+        pyautogui.press("volumemute")
+        return "Muting volume"
+
+#open Apps 
+    elif "open notepad" in text or "افتحي المفكرة" in text:
+        subprocess.Popen(["notepad.exe"])
+        return "Opening Notepad"
+
+    elif "open calculator" in text or "افتحي الآلة الحاسبة" in text:
+        subprocess.Popen(["calc.exe"])
+        return "Opening Calculator"
+
+    elif "open paint" in text or "افتحي الرسام" in text:
+        subprocess.Popen(["mspaint.exe"])
+        return "Opening Paint"
+
+#Searching on the web
+    elif "search youtube for" in text or "ابحث في يوتيوب عن" in text:
+        query = text.replace("search youtube for", "").replace("ابحث في يوتيوب عن", "").strip()
+        if query:
+            webbrowser.open(f"https://www.youtube.com/results?search_query={query}")
+            return f"Searching YouTube for '{query}'"
+
+    elif "search google for" in text or "ابحث في جوجل عن" in text or "ابحثي عن" in text:
+        query = text.replace("search google for", "").replace("ابحث في جوجل عن", "").replace("ابحثي عن", "").strip()
+        if query:
+            webbrowser.open(f"https://www.google.com/search?q={query}")
+            return f"Searching Google for '{query}'"
+
+    elif "play song" in text or "play" in text or "شغلي أغنية" in text or "شغلي" in text or "search music for" in text or "ابحثي عن أغنية" in text:
+        query = text.replace("play song", "").replace("play", "").replace("شغلي أغنية", "").replace("شغلي", "").replace("search music for", "").replace("ابحثي عن أغنية", "").strip()
+        if query:
+            webbrowser.open(f"https://music.youtube.com/search?q={query}")
+            return f"Searching YouTube Music for '{query}'"
+        else:
+            open_yt_music()
+            return "Opening YouTube Music"
+
+
+#open websites
+    elif "youtube music" in text or "yt music" in text or "يويتوب ميوزك" in text:
         open_yt_music()
         return "Opening YouTube Music"
     elif "youtube" in text or "يوتيوب" in text:
@@ -162,16 +224,21 @@ def listen():
             chat_entry.insert(0, text)
             chat_label.config(text="Friday is waiting")
 
+            chat_history.insert(tk.END, f"You: {text}\n")
+
             web_response = check_web_commands(text)
 
             if web_response:
-                chat_display.insert(tk.END, f"You: {text}\nFriday: {web_response}\n\n")
-                chat_display.see(tk.END)
-                speak(web_response)
+                response = web_response
             else:
-                chat()
+                response = ask_ai(text)
 
-        except Exception:
+            chat_history.insert(tk.END, f"Friday: {response}\n\n")
+            chat_history.see(tk.END)
+            speak(response)
+
+        except Exception as e:
+            print("Error in listening:", e)
             chat_label.config(text="Could not understand...")
             window.after(2000, lambda: chat_label.config(text="Friday is waiting"))
 
