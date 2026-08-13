@@ -5,7 +5,7 @@
 
 #import
 import random
-import datetime
+from datetime import datetime, time, timedelta
 import webbrowser
 import tkinter as tk
 import json
@@ -18,6 +18,9 @@ from tkinter import scrolledtext
 import speech_recognition as sr
 import subprocess
 import pyautogui
+import winsound
+import time 
+from tkinter import messagebox
 
 
 load_dotenv(find_dotenv(), override=True)
@@ -131,6 +134,75 @@ def ask_ai(prompt):
         return f"Error: {e}"
 
 
+def start_timer_thread(seconds, message="Timer finished!"):
+    def timer():
+        time.sleep(seconds)
+        for _ in range(3):
+            winsound.Beep(1000, 500)
+            time.sleep(0.2)
+
+        try:
+            speak(message)
+        except Exception:
+            pass
+
+        from tkinter import messagebox
+        messagebox.showinfo("Friday Reminder", message)
+
+    threading.Thread(target=timer, daemon=True).start()
+
+
+def save_note(note_text):
+    with open("notes.txt", "a", encoding="utf-8") as f:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+        f.write(f"[{timestamp}] {note_text}\n")
+    return "Note saved successfully."
+
+def read_notes():
+    try:
+        with open("notes.txt", "r", encoding="utf-8") as f:
+            lines = f.readlines()
+            if not lines:
+                return "You have no saved notes."
+            return "Your notes: " + " | ".join([line.strip() for line in lines[-3:]])
+    except FileNotFoundError:
+        return "You have no saved notes."
+
+
+def add_tasks(task, day="today"):
+    day_key = datetime.now().strftime("%Y-%m-%d") if day == "today" else day.lower()
+
+    try:
+        with open("tasks.json", "r", encoding="utf-8") as f:
+            date = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        date = {}
+
+    if day_key not in date:
+        date[day_key] = []
+
+    date[day_key].append(task)
+
+    with open("tasks.json", "w", encoding="utf-8") as f:
+        json.dump(date, f, ensure_ascii=False, indent=4)
+
+    return f"Added '{task}' to your tasks for {day}."
+
+def get_tasks(day="today"):
+    day_key = datetime.now().strftime("%Y-%m-%d") if day == "today" else day.lower()
+
+    try: 
+        with open("tasks.json", "r", encoding="utf-8") as f:
+            date = json.load(f)
+            tasks = date.get(day_key, [])
+            if not tasks:
+                return f"You have no tasks for {day}."
+            return f"Your tasks for {day}: " + " , ".join(tasks)
+    except FileNotFoundError:
+        return "No tasks saved yet."
+
+
+
 def check_web_commands(text):
     text = text.lower()
 
@@ -206,6 +278,45 @@ def check_web_commands(text):
     elif "chatgpt" in text or "chat gpt" in text or "شات جي بي تي" in text:
         open_chatgpt()
         return "Opening ChatGPT"
+
+
+#Timer and Reminder
+    elif "timer" in text or "remind me" in text or "set a timer" in text or "set reminder" in text or "ذكريني" in text:
+        import re
+        numbers = re.findall(r'\d+', text)
+        amount = int(numbers[0]) if numbers else 1
+
+        if "second" in text or "seconds" in text or "ثانية" in text or "ثواني" in text:
+            seconds = amount
+
+        elif "hour" in text or "hours" in text or "ساعة" in text or "ساعات" in text:
+            seconds = amount * 3600
+        else:
+            seconds = amount * 60
+
+        msg = "Time is up!" if ("timer" in text or "set a timer" in text or "منبه" in text) else text
+        start_timer_thread(seconds, msg)
+        return f"Timer set for {amount} unit(s)."
+
+#Write Notes
+    elif "write note" in text or "اكتبي ملاحظة" in text or "اكتبي بالملاحظات" in text:
+        note_content = text.replace("write note", "").replace("اكتبي ملاحظة", "").replace("اكتبي بالملاحظات", "").strip()
+        if note_content:
+            return save_note(note_content)
+        return "What would you like me to note down?"
+
+#Read Notes
+    elif "show notes" in text or "read notes" in text or "اقرئي ملاحظاتي" in text or "الملاحظات" in text or "show note" in text:
+        return read_notes()
+
+    elif "add task" in text or "اضيفي مهمه" in text or "سجلي مهمه" in text:
+        task = text.replace("add task", "").replace("اضيفي مهمه", "").replace("سجلي مهمه", "").strip()
+        if task:
+            return add_tasks(task, "today")
+        return "what task do you want to add?"
+
+    elif "show tasks" in text or "my tasks" in text or "جدول اليوم" in text or "شو عندي اليوم" in text:
+        return get_tasks("today")
 
     return None
 
