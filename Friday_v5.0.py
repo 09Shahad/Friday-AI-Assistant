@@ -23,6 +23,9 @@ from tkinter import messagebox
 import asyncio
 import edge_tts
 import pygame
+
+pygame.mixer.init()
+
 import requests
 import xml.etree.ElementTree as ET
 
@@ -30,13 +33,15 @@ import xml.etree.ElementTree as ET
 load_dotenv(find_dotenv(), override=True)
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-
 #Speak Functions
 
 
 def speak(text):
     def run():
         try:
+            if "window" in globals():
+                window.after(0, lambda: update_status("speaking"))
+
             async def _speak():
                 VOICE = "en-US-JennyNeural"
                 OUTPUT_FILE = "voice.mp3"
@@ -52,8 +57,14 @@ def speak(text):
                 pygame.mixer.music.unload()
 
             asyncio.run(_speak())
+
+            if "window" in globals():
+                window.after(0, lambda: update_status("idle"))
+
         except Exception as e:
             print("Audio Error:", e)
+            if "window" in globals():
+                window.after(0, lambda: update_status("idle"))
 
     threading.Thread(target=run, daemon=True).start()
                 
@@ -105,14 +116,29 @@ def ask_ai(prompt):
             f"2. If the user shares new personal facts, acknowledge it naturally."
         )
 
-        chat_completion = groq_client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": system_instruction},
-                {"role": "user", "content": prompt}
-            ],
-            model="llama-3.3-70b-versatile",
-            max_tokens=60
-        )
+        PRIMARY_MODEL = "allam-2-7b"
+        FALLBACK_MODEL = "allam-2-7b"
+
+        try:
+            chat_completion = groq_client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": prompt}
+                ],
+                model=PRIMARY_MODEL,
+                max_tokens=60
+            )
+        except Exception:
+            chat_completion = groq_client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": prompt}
+                ],
+                model=FALLBACK_MODEL,
+                max_tokens=60
+                 
+            )
+
         response_text = chat_completion.choices[0].message.content
 
         update_prompt = (
@@ -123,7 +149,7 @@ def ask_ai(prompt):
 
         mem_check = groq_client.chat.completions.create(
             messages=[{"role": "user", "content": update_prompt}],
-            model="llama-3.3-70b-versatile",
+            model=PRIMARY_MODEL,
             max_tokens=20
         ).choices[0].message.content.strip()
 
@@ -203,6 +229,24 @@ def get_tasks(day="today"):
             return f"Your tasks for {day}: " + " , ".join(tasks)
     except FileNotFoundError:
         return "No tasks saved yet."
+
+
+def take_screenshot():
+    try:
+        folder_name = "screenshots"
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
+
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-&M-%S")
+        file_path = os.path.join(folder_name, f"screenshots_{timestamp}.png")
+
+        screenshot = pyautogui.screenshot()
+        screenshot.save(file_path)
+
+        return True 
+    except Exception as e:
+        print("Screenshots Error:", e)
+        return False
 
 
 
@@ -352,6 +396,14 @@ def check_web_commands(text):
         except Exception:
             return "sorry. I coudn't retrieve the news at the moment."
 
+  
+    elif any( k in text.lower() for k in ["screenshot", "take screenshot", "صوري الشاشة", "لقطة الشاشة"]):
+        if take_screenshot():
+            return "Screenshot saved successfully."
+        else:
+            return "Sorry, I could not take a screenshot."
+
+        
     return None
 
 
@@ -550,9 +602,33 @@ window.title("Friday AI assistant")
 window.geometry("520x750")
 window.configure(bg=BG_COLOR)
 
+#Scrollbar Setup
+main_canvas = tk.Canvas(window, bg=BG_COLOR, highlightthickness=0)
+scrollbar = tk.Scrollbar(window, orient="vertical", command=main_canvas.yview)
+scrollable_frame = tk.Frame(main_canvas, bg=BG_COLOR)
+
+scrollable_frame.bind(
+    "<Configure>",
+    lambda e: main_canvas.configure(scrollregion=main_canvas.bbox("all"))
+)
+
+canvas_window = main_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+main_canvas.bind(
+    "<Configure>",
+    lambda e: main_canvas.itemconfig(canvas_window, width=e.width)
+)
+
+main_canvas.configure(yscrollcommand=scrollbar.set)
+
+main_canvas.pack(side="left", fill="both", expand=True)
+scrollbar.pack(side="right", fill="y")
+
+window.bind_all("<MouseWheel>", lambda e: main_canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
+
 #Labels
 Label = tk.Label(
-    window,
+    scrollable_frame,
     text="Friday AI Assistant",
     font=("Segoe UI", 16, "bold"),
     bg=BG_COLOR,
@@ -561,7 +637,7 @@ Label = tk.Label(
 Label.pack(pady=(15,5))
 
 subtitle = tk.Label(
-    window,
+    scrollable_frame,
     text="Choose what you want me to do:",
     font=("Segoe UI", 10),
     bg=BG_COLOR,
@@ -570,7 +646,7 @@ subtitle = tk.Label(
 subtitle.pack(pady=(0,10))
 
 #Button Frame
-button_frame = tk.Frame(window, bg=FRAME_BG, bd=1, relief="solid", padx=10, pady=10)
+button_frame = tk.Frame(scrollable_frame, bg=FRAME_BG, bd=1, relief="solid", padx=10, pady=10)
 button_frame.pack(pady=5, padx=20)
 
 #Hover Effect
@@ -613,7 +689,7 @@ for text, cmd, r, c in buttons_data:
     btn.bind("<Leave>", on_leave)
 
 #Enters & Result
-entries_frame = tk.Frame(window, bg=BG_COLOR)
+entries_frame = tk.Frame(scrollable_frame, bg=BG_COLOR)
 entries_frame.pack(pady=5)
 
 number1 = tk.Entry(entries_frame, width=12, font=("Segoe UI", 10), justify="center", bg="#2E3440", fg="#FFFFFF", insertbackground="white") 
@@ -623,7 +699,7 @@ number2 = tk.Entry(entries_frame, width=12 , font=("Segoe UI", 10), justify="cen
 number2.grid(row=0, column=1, padx=5)
 
 result_label = tk.Label(
-    window,
+    scrollable_frame,
     text="Answer will appear here.",
     font=("Segoe UI", 11, "italic"),
     bg=BG_COLOR,
@@ -633,7 +709,7 @@ result_label.pack(pady=8)
 
 #Chat History & Input
 chat_history = scrolledtext.ScrolledText(
-    window,
+    scrollable_frame,
     height=8,
     width=52,
     font=("Consolas", 10),
@@ -646,7 +722,7 @@ chat_history = scrolledtext.ScrolledText(
 chat_history.pack(pady=5)
 
 chat_entry = tk.Entry(
-    window,
+    scrollable_frame,
     width=40,
     font=("Segoe UI", 10),
     bg="#2E3440",
@@ -656,24 +732,113 @@ chat_entry = tk.Entry(
 )
 chat_entry.pack(pady=5)
 
-mic_button = tk.Button(
-    window,
-    text="🎤 voice",
-    font=("Segoe UI", 9, "bold"),
-    bg="#4C566A",
-    fg="#FFFFFF",
-    command=start_listening,
-)
-mic_button.pack(pady=3)
+# Canvas Circle
+status_canvas = tk.Canvas(scrollable_frame, width=70, height=70, bg=BG_COLOR, highlightthickness=0)
+status_canvas.pack(pady=5)
+status_circle = status_canvas.create_oval(10, 10, 60, 60, fill="#4A5568", outline=ACCENT_COLOR, width=2)
 
 chat_label = tk.Label(
-    window,
+    scrollable_frame,
     text="Friday is waiting",
     font=("Segoe UI", 10, "bold"),
     bg=BG_COLOR,
     fg=ACCENT_COLOR
 )
-chat_label.pack(pady=(2, 10))
+chat_label.pack(pady=(2, 5))
+
+
+#Update Status Function
+def update_status(state):
+    if state == "listening":
+        status_canvas.itemconfig(status_circle, fill="#00D2FF")
+        chat_label.config(text="Friday is listening...")
+    elif state == "speaking":
+        status_canvas.itemconfig(status_circle, fill="#10B981" )
+        chat_label.config(text="Friday is speaking...")
+    elif state == "thinking":
+        status_canvas.itemconfig(status_circle, fill="#F59E0B")
+        chat_label.config(text="Friday is thinking...")
+    else:
+        status_canvas.itemconfig(status_circle, fill="#4A5568")
+        chat_label.config(text="Friday is waiting")
+
+#Control Functions
+is_continuous = False
+
+def stop_audio():
+    try:
+        if pygame.mixer.get_init():
+            pygame.mixer.music.stop()
+            pygame.mixer.music.unload()
+        update_status("idle")
+    except Exception as e:
+        print("Stop Audio Error:", e)
+
+def continuous_listening():
+    global is_continuous
+    recognizer = sr.Recognizer()
+    while is_continuous:
+        try:
+            with sr.Microphone() as source:
+                window.after(0, lambda: update_status("listening"))
+                recognizer.adjust_for_ambient_noise(source, duration=0.5)
+                audio = recognizer.listen(source, timeout=5, phrase_time_limit=8)
+
+                window.after(0, lambda: update_status("thinking"))
+                text = recognizer.recognize_google(audio)
+
+                window.after(0, lambda t=text: chat_history.insert(tk.END, f"You:{t}\n"))
+                response = check_web_commands(text)
+
+                if response:
+                    window.after(0, lambda r=response: chat_history.insert(tk.END, f"Friday: {r}\n"))
+                    window.after(0, lambda: update_status("speaking"))
+                    speak(response)
+        except Exception:
+            continue
+        window.after(0, lambda: update_status("idle"))
+
+def toggle_mic():
+    global is_continuous
+    is_continuous = not is_continuous
+    if is_continuous:
+        mic_button.config(text="Continuous: ON" , bg="#10B981")
+        import threading
+        threading.Thread(target=continuous_listening, daemon=True).start()
+    else:
+        mic_button.config(text=" continuous: OFF", bg="#374151")
+        update_status("idle")
+
+
+
+
+#Control Button
+control_frame = tk.Frame(scrollable_frame, bg=BG_COLOR)
+control_frame.pack(pady=5)
+
+mic_button = tk.Button(
+    control_frame,
+    text="Continous: OFF",
+    font=("Segoe UI", 9, "bold"),
+    bg="#374151",
+    fg="#FFFFFF",
+    relief="flat",
+    command=toggle_mic
+)
+mic_button.pack(side=tk.LEFT, padx=5)
+
+stop_button = tk.Button(
+    control_frame,
+    text="stop Audio",
+    font=("Segoe UI", 9, "bold"),
+    bg="#EF4444",
+    fg="#FFFFFF",
+    command=stop_audio
+)
+stop_button.pack(side=tk.LEFT, padx=5)
+
+        
+
 
 
 
