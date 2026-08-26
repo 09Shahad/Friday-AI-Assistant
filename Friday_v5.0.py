@@ -104,6 +104,25 @@ secret_number = random.randint(1,10)
 
 #Chat Functions
 def ask_ai(prompt):
+    user_msg = prompt.lower().strip()
+
+    if "add task" in user_msg or "add to do" in user_msg or "add todo" in user_msg:
+        task_text = prompt.split("to", 1)[-1].strip() if "to" in prompt else prompt
+        return add_tasks(task_text)
+
+    if "show tasks" in user_msg or "my tasks" in user_msg or "show my tasks" in user_msg or "get tasks" in user_msg:
+        return get_tasks()
+
+    if "remind me" in user_msg:
+        try:
+            parts = prompt.split("at")
+            text = parts[0].replace("remind me to", "").replace("remind me", "").strip()
+            time_str = parts[1].strip()
+            return add_reminder_item(text, time_str)
+        except Exception as e:
+            return f"Error setting reminder: {e}"
+
+
     try:
 
         memory_context = "\n".join([f"- {k}: {v}" for k, v in memory.items()])
@@ -230,6 +249,69 @@ def get_tasks(day="today"):
     except FileNotFoundError:
         return "No tasks saved yet."
 
+import re
+
+def add_reminder_item(text, time_str):
+    match = re.search(r'(\d{1,2}):(\d{2})\s*(am|pm)?', time_str, re.IGNORECASE)
+    if not match:
+        return "Please specify time format like '09:45 PM' or '21:45'."
+
+    hours = int(match.group(1))
+    minutes = int(match.group(2))
+    period = match.group(3)
+
+    if period:
+        period = period.upper()
+        if period =="PM" and hours < 12:
+            hours += 12
+        elif period == "AM" and hours == 12:
+            hours = 0
+
+    time_obj = datetime.strptime(f"{hours:02d}:{minutes:02d}", "%H:%M")
+    formatted_time = time_obj.strftime("%I:%M %p")
+
+    try:
+        with open("tasks.json", "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        data = {}
+
+    if "reminders" not in data:
+        data["reminders"] = []
+
+    data["reminders"].append({"text":text, "time": formatted_time, "notified":False})
+
+    with open("tasks.json", "w", encoding="utf=8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+    return f"Reminder set for '{text}' at {formatted_time}."
+    
+
+
+def check_reminders_loop():
+    while True:
+        now = datetime.now().strftime("%I:%M %p")
+        try:
+            with open("tasks.json", "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            update = False
+            for rem in data.get("reminders", []):
+                if rem["time"] == now and not rem.get("notified", False):
+                    rem ["notified"] = True
+                    update = True
+                    msg = f"Reminder: {rem['text']}"
+                    speak(msg)
+                    if "window" in globals():
+                        window.after(0, lambda m=msg: messagebox.showinfo("Reminder, m"))
+
+            if update:
+                with open("tasks.json", "w", encoding="utf-8") as f:
+                    json.dump(data, f, ensure_ascii=False, indent=4)
+        except Exception:
+            pass
+        time.sleep(30)
+
 
 def take_screenshot():
     try:
@@ -328,7 +410,7 @@ def check_web_commands(text):
 
 
 #Timer and Reminder
-    elif "timer" in text or "remind me" in text or "set a timer" in text or "set reminder" in text or "ذكريني" in text:
+    elif "timer" in text or "set a timer" in text:
         import re
         numbers = re.findall(r'\d+', text)
         amount = int(numbers[0]) if numbers else 1
@@ -837,9 +919,6 @@ stop_button = tk.Button(
 )
 stop_button.pack(side=tk.LEFT, padx=5)
 
-        
-
-
 
 
 #Main Flow 
@@ -851,5 +930,5 @@ hobby = memory.get("hobby", "N/A")
 show_user_info(name, age, city, hobby)
 greeting(name)
 
-
+threading.Thread(target=check_reminders_loop, daemon=True).start()
 window.mainloop()
